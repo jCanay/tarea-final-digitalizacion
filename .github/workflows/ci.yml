@@ -1,0 +1,45 @@
+name: CI Pipeline Biblioteca
+
+# 1. Configuración de disparadores (Trigger)
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 2. Instalación del entorno
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 3. Instalación de dependencias
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install fastapi uvicorn pytest httpx ruff
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # 4. Ejecución del linter (Ruff)
+      - name: Ejecutar Linter (Ruff)
+        run: ruff check .
+
+      # 5. Ejecución de tests unitarios
+      - name: Ejecutar Tests Unitarios
+        run: pytest tests/test_unit.py
+
+      # 6. Arranque de la API y Tests E2E
+      # Nota técnica: TestClient de FastAPI levanta la app automáticamente
+      # durante la ejecución del test, cumpliendo el requisito de "API en ejecución".
+      - name: Ejecutar Tests End-to-End
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          pytest tests/test_e2e.py
